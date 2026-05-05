@@ -1,0 +1,3 @@
+0 Good Posture
+1 Slouching
+2 No Posture Detected

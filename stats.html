@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ZenFlow | Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.0.1"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #3d46a8; --bg: #fffcf8; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--primary); padding: 20px; }
+        .container { max-width: 1100px; margin: auto; background: white; padding: 30px; border-radius: 30px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .calendar-box { background: #f8f9fa; padding: 15px; border-radius: 15px; margin-bottom: 25px; 
+            display: flex; align-items: center; gap: 15px; }
+        input[type="date"] { padding: 8px; border-radius: 10px; border: 1px solid #ddd; font-weight: 600; 
+            color: var(--primary); }
+        .charts-grid { display: grid; grid-template-columns: 1fr; gap: 30px; }
+        .chart-card { background: #fff; padding: 20px; border: 1px solid #f1f2f6; border-radius: 20px;
+             height: 400px; }
+        h3 { margin-top: 0; font-size: 1.1rem; opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Postural Trends</h2>
+            <a href="/" style="text-decoration:none; color:var(--primary); font-weight:bold; 
+            border: 2px solid var(--primary); padding: 8px 20px; border-radius: 12px;">← Back</a>
+        </div>
+
+        <div class="calendar-box">
+            <label><strong>Select Day:</strong></label>
+            <input type="date" id="datePicker" onchange="loadStats()">
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Trend Analysis (Line)</h3>
+                <canvas id="lineChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>Hourly Comparison (Bar)</h3>
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('datePicker').valueAsDate = new Date();
+        let lineChart, barChart;
+
+        function loadStats() {
+            const selectedDate = document.getElementById('datePicker').value;
+            fetch(`/api/hourly_stats/${selectedDate}`)
+                .then(r => r.json())
+                .then(data => {
+                    console.log("📊 API DATA:", data);
+                    const fullDayLabels = Array.from({length: 24}, (_, i) => `${i}:00`);
+                    const fullDayScores = new Array(24).fill(0); // Default all hours to 0% focus
+                    if (data.labels && data.labels.length > 0) {
+                        data.labels.forEach((label, index) => {
+                            const hour = parseInt(label); 
+                            if (!isNaN(hour)) {
+                                fullDayScores[hour] = data.scores[index];
+                    }
+                });
+            }
+
+                    const goalAnnotation = {
+                        type: 'line',
+                        yMin: 70,
+                        yMax: 70,
+                        borderColor: 'rgba(255, 99, 132, 0.8)',
+                        borderWidth: 2,
+                        borderDash: [6, 6],
+                        label: {
+                            display: true,
+                            content: 'Goal: 70%',
+                            position: 'end',
+                            backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                            color: '#fff',
+                            font: { size: 10 }
+                        }
+                    };
+
+                    const commonOptions = {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, max: 100 } },
+                        plugins: { annotation: { annotations: { goalLine: goalAnnotation } } }
+                    };
+
+                    // LINE CHART
+                    const ctxLine = document.getElementById('lineChart').getContext('2d');
+                    if (lineChart) lineChart.destroy();
+                    lineChart = new Chart(ctxLine, {
+                        type: 'line',
+                        data: {
+                            labels: fullDayLabels,
+                            datasets: [{
+                                label: 'Focus %',
+                                data: fullDayScores,
+                                borderColor: '#3d46a8',
+                                backgroundColor: 'rgba(61, 70, 168, 0.2)',
+                                fill: true,
+                                tension: 0.4,
+                                borderWidth: 3
+                            }]
+                        },
+                        options: commonOptions
+                    });
+
+                    // BAR GRAPH
+                    const ctxBar = document.getElementById('barChart').getContext('2d');
+                    if (barChart) barChart.destroy();
+                    barChart = new Chart(ctxBar, {
+                        type: 'bar',
+                        data: {
+                            labels: fullDayLabels,
+                            datasets: [{
+                                label: 'Hourly Health',
+                                data: fullDayScores,
+                                backgroundColor: 'rgba(61, 70, 168, 0.7)',
+                                borderRadius: 8
+                            }]
+                        },
+                        options: commonOptions
+                    });
+                })
+                .catch(err => console.error("Error loading stats:", err));
+        }
+        loadStats();
+    </script>
+</body>
+</html>

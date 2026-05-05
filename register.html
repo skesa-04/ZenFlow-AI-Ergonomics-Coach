@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenFlow | Register</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --maroon: #800000;
+            --green: #27ae60;
+            --bg-light: #f0f4f8;
+            --text-gray: #555;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: var(--bg-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .main-card {
+            background: white;
+            width: 1000px;
+            height: 600px;
+            display: flex;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .left-side {
+            flex: 1.2;
+            background-color: #f9fbff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .left-side img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .right-side {
+            flex: 0.8;
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        h2 {
+            color: var(--maroon);
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+
+        .subtitle {
+            color: var(--text-gray);
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+            position: relative;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ddd;
+            background: #fcfcfc;
+            border-radius: 0px; 
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--green);
+            outline: none;
+        }
+
+        /* Password Toggle Styling */
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            bottom: 15px;
+            cursor: pointer;
+            color: var(--text-gray);
+            font-size: 0.9rem;
+            user-select: none;
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 16px;
+            background-color: var(--green);
+            color: white;
+            border: none;
+            border-radius: 0px; 
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        .btn-register:hover {
+            background-color: #219150;
+        }
+
+        .footer-links {
+            margin-top: 25px;
+            font-size: 0.9rem;
+            color: #777;
+        }
+
+        .footer-links a {
+            color: var(--green);
+            text-decoration: none;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-card">
+        <div class="left-side">
+            <img src="{{ url_for('static', filename='illustration-depicting-corporate-job.jpg') }}" alt="Illustration">
+        </div>
+
+        <div class="right-side">
+            <h2>Create Account</h2>
+            <p class="subtitle">Please enter your details to register your new account with ZenFlow.</p>
+
+            <form id="regForm">
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" id="username" name="username" placeholder="Choose a username" required>
+                </div>
+                
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                    <span class="password-toggle" id="toggleBtn">Show</span>
+                </div>
+
+                <button type="submit" class="btn-register">Register Now</button>
+            </form>
+
+            <div class="footer-links">
+                Already have an account? <a href="{{ url_for('login') }}">Login Here</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Password Visibility Toggle
+        const passwordInput = document.getElementById('password');
+        const toggleBtn = document.getElementById('toggleBtn');
+
+        toggleBtn.addEventListener('click', () => {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleBtn.textContent = 'Hide';
+            } else {
+                passwordInput.type = 'password';
+                toggleBtn.textContent = 'Show';
+            }
+        });
+
+        // Form Submission Logic
+        document.getElementById('regForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const userData = {
+                username: document.getElementById('username').value,
+                password: passwordInput.value
+            };
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+
+                if (response.ok) {
+                    alert("Registration Successful! Redirecting to login...");
+                    window.location.href = "{{ url_for('login') }}";
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.error || "Registration failed.");
+                }
+            } catch (err) {
+                alert("Server error. Please try again later.");
+            }
+        });
+    </script>
+</body>
+</html>

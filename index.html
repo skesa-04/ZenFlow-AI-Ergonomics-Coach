@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenFlow | AI Ergonomics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3d46a8;
+            --accent-orange: #ff7e42;
+            --accent-teal: #4bc9c0;
+            --danger: #ff5e57;
+            --text-muted: #636e72;
+            --bg-gradient: linear-gradient(135deg, #fffcf8 0%, #f7f3ed 100%);
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-gradient); 
+            margin: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            overflow: hidden; 
+        }
+
+        .main-wrapper { 
+            display: flex; 
+            max-width: 1300px; 
+            width: 95%; 
+            min-height: 500px;
+            align-items: stretch; 
+            background: rgba(255, 255, 255, 0.6); 
+            backdrop-filter: blur(20px); 
+            border-radius: 40px; 
+            min-height: 600px; 
+            box-shadow: 0 40px 100px rgba(165, 134, 107, 0.15); 
+            border: 1px solid rgba(255,255,255,0.4); 
+            position: relative; 
+            overflow: visible;
+        }
+
+        .auth-bar { position: absolute; top: 20px; right: 40px; z-index: 10; font-size: 0.85rem; }
+        .logout-link { 
+            color: var(--danger); 
+            text-decoration: none; 
+            font-weight: 600; 
+            padding: 5px 12px; 
+            border: 1px solid var(--danger); 
+            border-radius: 8px; 
+            margin-left: 10px; 
+        }
+
+        .left-visual-panel { 
+            flex: 0.8; 
+            background-size: cover; 
+            background-position: center; 
+            position: sticky; 
+            top: 0; 
+            height: 600px; 
+            border-radius: 40px 0 0 40px; 
+        }
+
+        .right-menu-panel { 
+            flex: 1; 
+            height: 600px; 
+            overflow-y: auto; 
+            padding: 30px 25px;
+            display: flex; 
+            flex-direction: column; 
+            justify-content: flex-start; 
+            scroll-behavior: smooth; 
+        }
+        
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 1.5rem 0; }
+        .stat-card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 20px; 
+            border: 1px solid #f1f2f6; 
+            text-align: left; 
+            transition: 0.3s; 
+        }
+        .stat-card h3 { 
+            margin: 0; 
+            font-size: 0.7rem; 
+            text-transform: uppercase; 
+            color: var(--text-muted); 
+            letter-spacing: 1px; 
+        }
+        .stat-card div { font-size: 2rem; font-weight: 800; color: var(--primary); }
+
+        .btn { 
+            padding: 16px; 
+            font-size: 1rem; 
+            border: none; 
+            border-radius: 16px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            transition: 0.3s; 
+            width: 100%; 
+        }
+        .btn-start { background: var(--primary); color: white; }
+        .btn-stop { 
+            background: transparent; 
+            color: var(--accent-orange); 
+            border: 2px solid var(--accent-orange); 
+            display: none; 
+        }
+
+        #yoga-overlay { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0, 0, 0, 0.95); 
+            z-index: 9999; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            text-align: center; 
+        }
+        #yoga-overlay.visible { display: flex; }
+        
+        .status-container { 
+            margin: 0 auto 20px auto; 
+            display: inline-flex; 
+            align-items: center; 
+            padding: 8px 20px; 
+            background: #f8f9fa; 
+            border-radius: 50px; 
+        }
+        .status-dot { height: 8px; width: 8px; border-radius: 50%; background: #dfe6e9; margin-right: 10px; }
+        .active-dot { background: var(--accent-teal); box-shadow: 0 0 8px var(--accent-teal); }
+    </style>
+</head>
+<body>
+
+    <div class="main-wrapper">
+        <div class="auth-bar">
+            <span><strong>{{ current_user.username }}</strong></span>
+            <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
+        </div>
+
+        <div class="left-visual-panel" style="background-image: url('{{ url_for('static', filename='image_1.jpg') }}');">
+        </div>
+
+        <div class="right-menu-panel">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h1 style="margin:0; color: var(--primary); font-size: 2.2rem; font-weight: 800;">ZenFlow</h1>
+                <p style="color: var(--text-muted); margin: 0; font-size: 0.9rem; letter-spacing: 1px; text-transform: uppercase;">Work Smarter</p>
+            </div>
+
+            <div class="status-container">
+                <span id="status-dot" class="status-dot"></span>
+                <span id="status-text" style="font-size: 0.8rem;">System Offline</span>
+            </div>
+
+            <div class="session-log-wrapper" style="text-align: left; margin-bottom: 20px;">
+                <h4 style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Activity History</h4>
+                <div id="activity-log" style="height: 100px; overflow-y: auto; background: rgba(0,0,0,0.03); border-radius: 15px; padding: 10px; font-size: 0.8rem; border: 1px solid #eee;">
+                    <p style="color: #999; text-align: center; margin-top: 30px;">No activity recorded yet.</p>
+                </div>
+            </div>
+
+            <div class="dashboard">
+                <div id="health-card" class="stat-card">
+                    <h3>Focus Health</h3>
+                    <div id="focus-score">100%</div>
+                </div>
+
+                <a href="/stats" class="stat-card" style="text-decoration: none; display: flex; flex-direction: column; justify-content: center; background: #f1f2f6; border: 1px dashed var(--primary);">
+                    <h3 style="color: var(--primary);">Data Insights</h3>
+                    <div style="font-size: 1.2rem; color: var(--primary); font-weight: 800;">📊 Analytics</div>
+                </a>
+
+                <div class="stat-card" id="slouch-card" style="position: relative; overflow: hidden;">
+                    <h3>Slouch Warning</h3>
+                    <div style="display: flex; align-items: baseline; gap: 10px;">
+                        <div id="slouch-timer">0s</div>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">/ 5s limit</span>
+                    </div>
+                    <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 6px; background: #eee;">
+                        <div id="slouch-progress-fill" style="width: 0%; height: 100%; background: var(--danger); transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Session Timer</h3>
+                    <div id="session-timer">00:00</div>
+                </div>
+            </div>
+
+            <div class="btn-group" style="margin-top: auto; padding: 20px 0 40px 0; display: flex; flex-direction: column; align-items: center; width: 100%; justify-content: center">
+                <button id="start-btn" class="btn btn-start" onclick="startAI()">Start Session</button>
+                <button id="stop-btn" class="btn btn-stop" onclick="stopAI()">End Session</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="yoga-overlay">
+        <h1>🧘 Reset Your Flow</h1>
+        <p>Your Focus Health reached 0%. Follow this stretch to resume.</p>
+        <video id="stretch-video" width="550" controls onplay="videoStarted()" onended="manualResume()">
+            <source src="{{ url_for('static', filename='yoga_stretch.mp4') }}" type="video/mp4">
+        </video>
+        <br>
+        <button class="btn" style="width:250px; background:white; color:var(--primary); margin-top: 20px;" onclick="manualResume()">Back to Dashboard</button>
+    </div>
+
+    <audio id="alarm-sound" src="{{ url_for('static', filename='alarm.mp3') }}" loop preload="auto"></audio>
+
+<script>
+    let timerInterval, statusInterval;
+    let totalSecs = 0, goodSecs = 0;
+    let focusHealth = 100; 
+    let isSlouching = false;
+    let gracePeriod = false;
+    let isVideoPlaying = false;
+    let slouchCounter = 0;
+    let goodPostureCounter = 0;
+
+    const alarm = document.getElementById('alarm-sound');
+    const video = document.getElementById('stretch-video');
+    const overlay = document.getElementById('yoga-overlay');
+
+    function videoStarted() {
+        isVideoPlaying = true;
+        if(alarm){
+            alarm.pause();
+            alarm.currentTime = 0;
+        }
+        fetch('/pause_for_yoga').then(() => {
+            document.getElementById('status-text').innerText = "Yoga Break: Camera Off";
+            document.getElementById('status-dot').classList.remove('active-dot');
+        });
+    }
+
+    function addLogEntry(message) {
+        const log = document.getElementById('activity-log');
+        if(log.innerText.includes("No activity")) log.innerHTML = ""; 
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const entry = `<p style="margin: 5px 0; border-bottom: 1px solid #eee; padding-bottom: 3px;">
+                        <span style="color: var(--primary); font-weight: bold;">[${time}]</span> ${message}
+                       </p>`;
+        log.innerHTML = entry + log.innerHTML; 
+    }
+
+    function updateMetrics() {
+        if (isVideoPlaying || gracePeriod || !timerInterval) return;
+
+        const timerElem = document.getElementById('slouch-timer');
+        const cardElem = document.getElementById('slouch-card');
+        const progressFill = document.getElementById('slouch-progress-fill');
+
+        if (isSlouching) {
+            slouchCounter++;
+            goodPostureCounter = 0;
+            timerElem.innerText = slouchCounter + "s";
+            progressFill.style.width = (slouchCounter / 5 * 100) + "%";
+
+            if (slouchCounter >= 3) {
+                cardElem.style.background = "#fff5f5";
+                cardElem.style.borderColor = "var(--danger)";
+                timerElem.style.color = "var(--danger)";
+            }
+
+            if (slouchCounter >= 5) {
+                focusHealth = Math.max(0, focusHealth - 5);
+                addLogEntry("⚠️ Slouch detected! Focus health reduced.");
+                slouchCounter = 0; 
+            }
+        } else {
+            goodPostureCounter++;
+            slouchCounter = 0;
+            timerElem.innerText = "0s";
+            timerElem.style.color = "var(--primary)";
+            cardElem.style.background = "white";
+            cardElem.style.borderColor = "#f1f2f6";
+            progressFill.style.width = "0%";
+
+            if (goodPostureCounter >= 10) {
+                focusHealth = Math.min(100, focusHealth + 1);
+                goodPostureCounter = 0;
+            } 
+            goodSecs++;
+        }
+        totalSecs++;
+
+        document.getElementById('focus-score').innerText = Math.round(focusHealth) + "%";
+        let mins = Math.floor(totalSecs / 60).toString().padStart(2, '0');
+        let secs = (totalSecs % 60).toString().padStart(2, '0');
+        document.getElementById('session-timer').innerText = `${mins}:${secs}`;
+
+        if (focusHealth <= 0 && !overlay.classList.contains('visible')) {
+            alarm.play().catch(e => console.log("Blocked:", e));
+            overlay.classList.add('visible');
+            fetch('/stop_camera').then(() => {
+                document.getElementById('status-text').innerText = "Yoga Break Active";
+                document.getElementById('status-dot').classList.remove('active-dot');
+            });
+        }
+    }
+
+    function checkStatus() {
+        if (gracePeriod || isVideoPlaying || !timerInterval) return; 
+        fetch('/status').then(r => r.json()).then(data => {
+            isSlouching = data.slouching;
+        });
+    }
+
+    function manualResume() {
+        if (alarm) { alarm.pause(); alarm.currentTime = 0; }
+        video.pause();
+        overlay.classList.remove('visible');
+        isVideoPlaying = false;
+        focusHealth = 100;
+        slouchCounter = 0;
+        document.getElementById('focus-score').innerText = "100%";
+        document.getElementById('status-text').innerText = "System Active";
+        document.getElementById('status-dot').classList.add('active-dot');
+
+        fetch('/start_camera').then(() => {
+            gracePeriod = true;
+            setTimeout(() => { gracePeriod = false; }, 5000); 
+        });
+    }
+
+    function startAI() {
+        totalSecs = 0; focusHealth = 100;
+        document.getElementById('start-btn').style.display = 'none';
+        document.getElementById('stop-btn').style.display = 'block';
+        document.getElementById('status-dot').classList.add('active-dot');
+        document.getElementById('status-text').innerText = "System Active";
+        timerInterval = setInterval(updateMetrics, 1000);
+        statusInterval = setInterval(checkStatus, 1000);
+        fetch('/start_camera');
+    }
+
+    function stopAI() {
+        clearInterval(timerInterval);
+        clearInterval(statusInterval);
+        timerInterval = null;
+        fetch('/stop_camera');
+        document.getElementById('start-btn').style.display = 'block';
+        document.getElementById('stop-btn').style.display = 'none';
+        document.getElementById('status-dot').classList.remove('active-dot');
+        document.getElementById('status-text').innerText = "System Offline";
+    }
+</script>
+</body>
+</html>
